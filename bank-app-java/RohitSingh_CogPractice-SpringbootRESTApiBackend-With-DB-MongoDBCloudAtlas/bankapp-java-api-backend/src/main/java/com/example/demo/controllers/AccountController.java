@@ -54,4 +54,16 @@ public class AccountController {
         Account updated = accountService.withdraw(accountId, amount);
         return ResponseEntity.ok(updated);
     }
+    
+    // Transfer money between accounts
+    @PostMapping("/transfer")
+    public ResponseEntity<String> transfer(@RequestBody Map<String, Object> request) {
+        String fromAccountId = (String) request.get("fromAccountId");
+        String toAccountId = (String) request.get("toAccountId");
+        double amount = (Double) request.get("amount");
+
+        accountService.transfer(fromAccountId, toAccountId, amount);
+        
+        return ResponseEntity.ok("Transfer successful");
+    }
 }

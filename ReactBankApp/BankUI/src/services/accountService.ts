@@ -1,0 +1,41 @@
+import api from './api';
+
+export interface CreateAccountRequest {
+  userId: string;
+  accountType: 'CHECKING' | 'SAVINGS';
+}
+
+export const createAccount = async (accountData: {
+  userId: string;
+  accountType: 'CHECKING' | 'SAVINGS';
+}) => {
+  const response = await api.post('/accounts', accountData);
+  return response.data;
+};
+export const getAccountsByUser = async (userId: string) => {
+  const response = await api.get(`/accounts/user/${userId}`);
+  return response.data;
+};
+
+export const depositToAccount = async (accountId: string, amount: number) => {
+  const response = await api.post(`/accounts/${accountId}/deposit`, { amount });
+  return response.data;
+};
+
+export const withdrawFromAccount = async (accountId: string, amount: number) => {
+  const response = await api.post(`/accounts/${accountId}/withdraw`, { amount });
+  return response.data;
+};
+
+export const transferBetweenAccounts = async (
+  fromAccountId: string,
+  toAccountId: string,
+  amount: number
+) => {
+  const response = await api.post('/accounts/transfer', {
+    fromAccountId,
+    toAccountId,
+    amount,
+  });
+  return response.data;
+};

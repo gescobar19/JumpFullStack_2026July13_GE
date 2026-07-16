@@ -34,4 +34,13 @@ public class UserService {
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
+    
+    public Optional<User> login(String username, String password) {
+        Optional<User> user = userRepository.findByUsername(username);
+        
+        if (user.isPresent() && user.get().getPassword().equals(password)) {
+            return user;
+        }
+        return Optional.empty();
+    }
 }

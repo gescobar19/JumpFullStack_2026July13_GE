@@ -68,6 +68,53 @@ public class AccountService {
         return accountRepository.save(account);
     }
     
+ // Transfer money between accounts
+    public void transfer(String fromAccountId, String toAccountId, double amount) {
+        if (amount <= 0) {
+            throw new RuntimeException("Transfer amount must be positive");
+        }
+
+        Account fromAccount = accountRepository.findById(fromAccountId)
+                .orElseThrow(() -> new RuntimeException("Source account not found"));
+
+        Account toAccount = accountRepository.findById(toAccountId)
+                .orElseThrow(() -> new RuntimeException("Destination account not found"));
+
+        if (fromAccount.getBalance() < amount) {
+            throw new RuntimeException("Insufficient balance in source account");
+        }
+
+        // Perform transfer
+        fromAccount.setBalance(fromAccount.getBalance() - amount);
+        toAccount.setBalance(toAccount.getBalance() + amount);
+
+        // Create transaction records
+        Transaction withdrawTxn = new Transaction(
+            fromAccountId, 
+            fromAccount.getUserId(), 
+            "TRANSFER_OUT", 
+            amount, 
+            "Transfer to account " + toAccountId
+        );
+
+        Transaction depositTxn = new Transaction(
+            toAccountId, 
+            toAccount.getUserId(), 
+            "TRANSFER_IN", 
+            amount, 
+            "Transfer from account " + fromAccountId
+        );
+
+        transactionRepository.save(withdrawTxn);
+        transactionRepository.save(depositTxn);
+
+        fromAccount.getTransactions().add(withdrawTxn);
+        toAccount.getTransactions().add(depositTxn);
+
+        accountRepository.save(fromAccount);
+        accountRepository.save(toAccount);
+    }
+    
     public void deleteAccount(String id) {
         accountRepository.deleteById(id);
     }
