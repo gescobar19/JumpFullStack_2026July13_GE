@@ -1,0 +1,3 @@
+Crucial Detail on Role Naming:
+Spring Security's hasRole("ADMIN") automatically looks for an authority prefixed with ROLE_ behind the scenes.
+When you build your database users or return your UserDetails.getAuthorities(), make sure your user's role string is formatted exactly as ROLE_ADMIN. If you only have "ADMIN", you must use .hasAuthority("ADMIN") in your SecurityFilterChain instead.
