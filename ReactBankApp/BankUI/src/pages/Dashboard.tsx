@@ -1,185 +1,90 @@
-import { useState, useEffect } from 'react';
-import { getAccountsByUser, depositToAccount, withdrawFromAccount, transferBetweenAccounts } from '../services/accountService';
-import { getTransactionsByAccount } from '../services/transactionService';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getAccountsByUser } from "../services/accountService";
 
 interface DashboardProps {
-  userId: string;
+  username: string;
 }
 
-function Dashboard({ userId }: DashboardProps) {
+const Dashboard = ({ username }: DashboardProps) => {
   const [accounts, setAccounts] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState('');
-  const [amount, setAmount] = useState(0);
-  const [targetAccount, setTargetAccount] = useState('');
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const fetchAccounts = async () => {
-    try {
-      const data = await getAccountsByUser(userId);
-      setAccounts(data);
-      if (data.length > 0 && !selectedAccount) {
-        setSelectedAccount(data[0].id);
-        loadTransactions(data[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to fetch accounts');
-    }
-  };
-
-  const loadTransactions = async (accountId: string) => {
-    try {
-      const data = await getTransactionsByAccount(accountId);
-      setTransactions(data);
-    } catch (error) {
-      console.error('Failed to load transactions');
-    }
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (userId) fetchAccounts();
-  }, [userId]);
+    const fetchAccounts = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        if (!user.id) {
+          console.error("No user ID found in localStorage");
+          setLoading(false);
+          return;
+        }
 
-  const showMessage = (msg: string, isError = false) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(''), 3500);
-  };
-
-  const refreshData = async () => {
-    await fetchAccounts();
-    if (selectedAccount) await loadTransactions(selectedAccount);
-  };
-
-  const handleAction = async (action: 'deposit' | 'withdraw' | 'transfer') => {
-    if (!selectedAccount || amount <= 0) return;
-
-    setLoading(true);
-    try {
-      if (action === 'deposit') {
-        await depositToAccount(selectedAccount, amount);
-        showMessage(`Deposited $${amount} successfully`);
-      } 
-      else if (action === 'withdraw') {
-        await withdrawFromAccount(selectedAccount, amount);
-        showMessage(`Withdrew $${amount} successfully`);
-      } 
-      else if (action === 'transfer') {
-        if (!targetAccount) return showMessage('Please select a target account', true);
-        await transferBetweenAccounts(selectedAccount, targetAccount, amount);
-        showMessage(`Transferred $${amount} successfully`);
+        const data = await getAccountsByUser(user.id);
+        setAccounts(data);
+      } catch (error) {
+        console.error("Failed to fetch accounts:", error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setAmount(0);
-      await refreshData();
-    } catch (error: any) {
-      showMessage(error.response?.data?.message || `${action} failed`, true);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchAccounts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-12 text-center text-slate-500">
+        Loading your accounts...
+      </div>
+    );
+  }
 
   return (
-    <div className="container">
-      {message && <div className="message-banner">{message}</div>}
+    <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="mb-10">
+        <h1 className="text-4xl font-semibold text-[#0F172A]">Welcome back, {username}</h1>
+        <p className="text-slate-500 mt-2 text-lg">Here’s a summary of your accounts today.</p>
+      </div>
 
-      <header className="welcome">
-        <h1>Dashboard</h1>
-        <p>Manage your accounts and transactions</p>
-      </header>
+      <h2 className="text-xl font-semibold text-[#0F172A] mb-6">Your Accounts</h2>
 
-      {/* Accounts Section */}
-      <section className="accounts-section">
-        <h2>Your Accounts</h2>
-        <div className="accounts-grid">
+      {accounts.length === 0 ? (
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center">
+          <p className="text-slate-500">You don’t have any accounts yet.</p>
+          <Link 
+            to="/create-account" 
+            className="inline-block mt-4 bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 rounded-2xl text-sm font-medium"
+          >
+            Create Your First Account
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {accounts.map((account) => (
-            <div
-              key={account.id}
-              className={`account-card ${selectedAccount === account.id ? 'selected' : ''}`}
-              onClick={() => {
-                setSelectedAccount(account.id);
-                loadTransactions(account.id);
-              }}
+            <div 
+              key={account.id} 
+              className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all"
             >
-              <div className="account-type">{account.accountType}</div>
-              <div className="account-balance">${account.balance?.toFixed(2)}</div>
-              <div className="account-id">ID: {account.id}</div>
+              <div className="text-sm text-slate-500 tracking-[1.5px] mb-1">{account.accountType} ACCOUNT</div>
+              <div className="text-4xl font-semibold text-[#0F172A] tracking-tight mb-1">
+                ${account.balance?.toFixed(2)}
+              </div>
+              <div className="text-xs text-slate-400 mb-8 font-mono">Account • {account.id}</div>
+
+              <Link 
+                to={`/account/${account.id}`} 
+                className="inline-block bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 rounded-2xl text-sm font-medium transition"
+              >
+                View Details
+              </Link>
             </div>
           ))}
         </div>
-      </section>
-
-      {/* Quick Actions */}
-      <section className="actions-section">
-        <h2>Quick Actions</h2>
-        <div className="amount-input">
-          <input
-            type="number"
-            placeholder="Enter amount"
-            value={amount || ''}
-            onChange={(e) => setAmount(Number(e.target.value))}
-          />
-        </div>
-
-        <div className="action-buttons">
-          <button onClick={() => handleAction('deposit')} className="btn btn-primary" disabled={loading}>
-            Deposit
-          </button>
-          <button onClick={() => handleAction('withdraw')} className="btn btn-danger" disabled={loading}>
-            Withdraw
-          </button>
-          <button onClick={() => handleAction('transfer')} className="btn btn-secondary" disabled={loading}>
-            Transfer
-          </button>
-        </div>
-
-        <div className="transfer-section">
-          <label>Transfer to:</label>
-          <select value={targetAccount} onChange={(e) => setTargetAccount(e.target.value)}>
-            <option value="">Select destination account</option>
-            {accounts
-              .filter((a) => a.id !== selectedAccount)
-              .map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.accountType} ({a.id})
-                </option>
-              ))}
-          </select>
-        </div>
-      </section>
-
-      {/* Transactions */}
-      <section className="transactions-section">
-        <h2>Recent Transactions</h2>
-        <div className="transactions-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.length > 0 ? (
-                transactions.map((tx: any) => (
-                  <tr key={tx.id}>
-                    <td>{tx.date}</td>
-                    <td><span className={`badge ${tx.type?.toLowerCase()}`}>{tx.type}</span></td>
-                    <td className={tx.type === 'WITHDRAW' ? 'negative' : 'positive'}>
-                      {tx.type === 'WITHDRAW' ? '-' : '+'}${tx.amount?.toFixed(2)}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr><td colSpan={3}>No transactions found</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      )}
     </div>
   );
-}
+};
 
 export default Dashboard;

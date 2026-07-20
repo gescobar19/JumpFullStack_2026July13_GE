@@ -1,7 +1,7 @@
 const Footer = () => {
   return (
-    <footer className="footer">
-      <p>© 2026 ABC Digital Bank. All rights reserved.</p>
+    <footer className="bg-[#0F172A] text-sky-200 text-center py-6 mt-auto text-sm">
+      © 2026 Celestial Bank. All rights reserved.
     </footer>
   );
 };
