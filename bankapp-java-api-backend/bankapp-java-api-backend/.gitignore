@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Extra junk that caused the mess ###
+bin/
+*.class
